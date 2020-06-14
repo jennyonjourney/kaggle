@@ -66,3 +66,133 @@ train.loc[train["Age"] >= 30, "AgeType"] = "Old"
 print(train.shape)
 train[["Age", "AgeType"]].head(10)
 
+train.groupby("AgeType")["Survived"].mean()
+
+train.loc[train["Age"].isnull(), "AgeBlank"] = "Blank"
+train.loc[train["Age"].notnull(), "AgeBlank"] = "Not Blank"
+print(train.shape)
+train[["Age", "AgeBlank"]].head(10)
+
+train.groupby("AgeBlank")["Survived"].mean()
+
+mean_age_by_pclass = train.groupby("Pclass")["Age"].mean()
+mean_age_by_pclass
+
+train["Age(fill)"] = train["Age"]
+print(train.shape)
+train[["Pclass","Age", "Age(fill)"]].head(30)
+
+train.loc[(train["Pclass"] == 1) & (train["Age"].isnull()), "Age(fill)"] = mean_age_by_pclass.loc[1]
+train.loc[(train["Pclass"] == 2) & (train["Age"].isnull()), "Age(fill)"] = mean_age_by_pclass.loc[2]
+train.loc[(train["Pclass"] == 3) & (train["Age"].isnull()), "Age(fill)"] = mean_age_by_pclass.loc[3]
+print(train.shape)
+train[["Pclass","Age", "Age(fill)"]].head(30)
+
+train.loc[train["Age"].isnull(), ["Pclass","Age", "Age(fill)"]].head(10)
+
+train["Single"] = (train["SibSp"] == 0) & (train["Parch"] == 0)
+print(train.shape)
+train[["SibSp", "Parch", "Single"]].head()
+
+pd.pivot_table(train, index="Single", values="Survived")
+
+train["FamilySize"] = train["SibSp"] + train["Parch"] + 1
+print(train.shape)
+train[["SibSp", "Parch", "FamilySize"]].head(10)
+
+pd.pivot_table(train, index="FamilySize", values="Survived")
+
+train.loc[train["FamilySize"] == 1, "FamilyType"] = "Single"
+train.loc[(train["FamilySize"] > 1) & (train["FamilySize"] < 5), "FamilyType"] = "Nuclear"
+train.loc[train["FamilySize"] >= 5, "FamilyType"] = "Big"
+print(train.shape)
+
+train[["FamilySize", "FamilyType"]].head(10)
+
+pd.pivot_table(data=train, index="FamilyType", values="Survived")
+
+train["FamilyType(Single)"] = train["FamilySize"] == 1
+train["FamilyType(Nuclear)"] = (train["FamilySize"] > 1) & (train["FamilySize"] < 5)
+train["FamilyType(Big)"] = train["FamilySize"] >= 5
+print(train.shape)
+train[["FamilySize", "FamilyType(Single)", "FamilyType(Nuclear)", "FamilyType(Big)"]].head(10)
+
+train["FamilyType(Single)"] = train["FamilyType"] == "Single"
+train["FamilyType(Nuclear)"] = train["FamilyType"] == "Nuclear"
+train["FamilyType(Big)"] = train["FamilyType"] == "Big"
+print(train.shape)
+train[["FamilySize", "FamilyType(Single)", "FamilyType(Nuclear)", "FamilyType(Big)"]].head(10)
+
+def get_title(name):
+    return name.split(", ")[1].split('. ')[0]
+
+train["Title"] = train["Name"].apply(get_title)
+print(train.shape)
+train[["Name", "Title"]].head(10)
+
+pd.pivot_table(train, index="Title", values="Survived")
+
+pd.crosstab(train["Title"], train["Survived"], margins=True)
+
+def get_cleaned_title(name):
+    title = name.split(", ")[1].split('. ')[0]
+    if title in ["Mr", "Mrs", "Miss", "Master"]:
+        return title
+    else:
+        return "Others"
+
+train["Title(Clean)"] = train["Name"].apply(get_cleaned_title)
+print(train.shape)
+train[["Name", "Title", "Title(Clean)"]].tail()
+
+pd.pivot_table(train, index="Title(Clean)", values="Survived")
+
+train.loc[train["Title"] == "Mr", "Married"] = True
+train.loc[train["Title"] == "Mrs", "Married"] = True
+train.loc[train["Title"] == "Master", "Married"] = False
+train.loc[train["Title"] == "Miss", "Married"] = False
+print(train.shape)
+
+train[["Name", "Title", "Married"]].head(10)
+
+train.loc[train["Title"].isin(["Mr", "Mrs"]), "Married"] = True
+train.loc[train["Title"].isin(["Master", "Miss"]), "Married"] = False
+print(train.shape)
+train[["Name", "Title", "Married"]].head(10)
+
+pd.pivot_table(train, index="Married", values="Survived")
+
+graham = train[train["Name"].str.contains("Graham")]
+graham
+graham[["Name", "SibSp", "Parch", "FamilySize"]]
+
+def get_surname(name):
+    surname = name.split(", ")[0]
+    return surname
+
+train["Surname"] = train["Name"].apply(get_surname)
+print(train.shape)
+train[["Name", "Surname"]].head()
+
+train['FamilyID'] = train['Surname'] + train["FamilySize"].astype('str')
+print(train.shape)
+train[["Name", "Surname", "FamilySize", "FamilyID"]].head()
+
+family_ids = train["FamilyID"].unique()
+print(len(family_ids))
+family_ids[0:10]
+
+for family_id in family_ids:
+    train[family_id] = train["FamilyID"] == family_id
+    
+print(train.shape)
+train.head()
+
+family_ids = pd.get_dummies(train["FamilyID"])
+print(family_ids.shape)
+family_ids.head()
+
+train = pd.concat([train, family_ids], axis=1)
+print(train.shape)
+train.head()
+
