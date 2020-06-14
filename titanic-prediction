@@ -1,0 +1,68 @@
+#Kaggle machine learning competition 타이타닉 생존율 예측 "The competition is simple: use machine learning to create a model that predicts which passengers survived the Titanic shipwreck."
+
+import pandas as pd
+train = pd.read_csv("data/titanic/train.csv", index_col="PassengerId")
+print(train.shape)
+train.head()
+
+#EDA
+survived_rate = train["Survived"].mean()
+survived_rate = survived_rate * 100
+print(f"생존률 = {survived_rate:.1f}%")
+train["Survived"].value_counts()
+train["Survived"].head()
+
+train.loc[train["Survived"] == 0, "Survived(humanized)"] = "Perish"
+train.loc[train["Survived"] == 1, "Survived(humanized)"] = "Survived"
+print(train.shape)
+train[["Survived", "Survived(humanized)"]].head()
+train["Survived(humanized)"].value_counts()
+
+pd.pivot_table(data=train, index="Pclass", values="Survived")
+
+train.loc[train["Pclass"] == 1, "Pclass(humanized)"] = "First Class"
+train.loc[train["Pclass"] == 2, "Pclass(humanized)"] = "Business"
+train.loc[train["Pclass"] == 3, "Pclass(humanized)"] = "Economy"
+print(train.shape)
+train[["Pclass", "Pclass(humanized)"]].head()
+
+pd.pivot_table(data=train, index="Pclass(humanized)", values="Survived")
+
+pd.pivot_table(data=train, index="Embarked", values="Survived")
+
+train.loc[train["Embarked"] == "C", "Embarked(humanized)"] = "Cherbourg"
+train.loc[train["Embarked"] == "S", "Embarked(humanized)"] = "Southampton"
+train.loc[train["Embarked"] == "Q", "Embarked(humanized)"] = "Queenstown"
+print(train.shape)
+train[["Embarked", "Embarked(humanized)"]].head()
+pd.pivot_table(data=train, index="Embarked(humanized)", values="Survived")
+
+train["Embarked(Cherbourg)"] = train["Embarked"] == "C"
+train["Embarked(Southampton)"] = train["Embarked"] == "S"
+train["Embarked(Queenstown)"] = train["Embarked"] == "Q"
+print(train.shape)
+train[["Embarked", "Embarked(humanized)", "Embarked(Cherbourg)", "Embarked(Southampton)", "Embarked(Queenstown)"]].head(10)
+
+train["Pclass(First Class)"] = train["Pclass"] == 1
+train["Pclass(Business)"] = train["Pclass"] == 2
+train["Pclass(Economy)"] = train["Pclass"] == 3
+print(train.shape)
+train[["Pclass", "Pclass(humanized)", "Pclass(First Class)", "Pclass(Business)", "Pclass(Economy)"]].head(10)
+
+train["Age"].mean()
+train["Age"].std()
+train["Age"].min()
+train["Age"].max()
+train["Age"].describe()
+
+pclass1["Age"].mean()
+pclass2["Age"].mean()
+pclass3["Age"].mean()
+train.groupby("Pclass")["Age"].mean()
+
+train.loc[train["Age"] < 15, "AgeType"] = "Young"
+train.loc[(train["Age"] >= 15) & (train["Age"] < 30), "AgeType"] = "Medium"
+train.loc[train["Age"] >= 30, "AgeType"] = "Old"
+print(train.shape)
+train[["Age", "AgeType"]].head(10)
+
