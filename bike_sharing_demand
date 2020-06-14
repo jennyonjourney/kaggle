@@ -1,1 +1,336 @@
+#데이터분석과 시각화, 머신러닝 알고리즘으로 시간당 자전거 대여량 예측하기 (kaggle대회:https://www.kaggle.com/c/bike-sharing-demand)
+#지표 : datetime - 시간. 연-월-일 시:분:초 로 표현합니다. (가령 2011-01-01 00:00:00은 2011년 1월 1일 0시 0분 0초)
+#season - 계절. 봄(1), 여름(2), 가을(3), 겨울(4) 순으로 표현합니다.
+#holiday - 공휴일. 1이면 공휴일이며, 0이면 공휴일이 아닙니다.
+#workingday - 근무일. 1이면 근무일이며, 0이면 근무일이 아닙니다.
+#weather - 날씨. 1 ~ 4 사이의 값을 가지며, 구체적으로는 다음과 같습니다.
+#1: 아주 깨끗한 날씨입니다. 또는 아주 약간의 구름이 끼어있습니다.
+#2: 약간의 안개와 구름이 끼어있는 날씨입니다.
+#3: 약간의 눈, 비가 오거나 천둥이 칩니다.
+#4: 아주 많은 비가 오거나 우박이 내립니다.
+#temp - 온도. 섭씨(Celsius)로 적혀있습니다.
+#atemp - 체감 온도. 마찬가지로 섭씨(Celsius)로 적혀있습니다.
+#humidity - 습도.
+#windspeed - 풍속.
+#casual - 비회원(non-registered)의 자전거 대여량.
+#registered - 회원(registered)의 자전거 대여량.
+#count - 총 자전거 대여랑. 비회원(casual) + 회원(registered)과 동일합니다.
+
+##Load dataset
+import pandas as pd
+train = pd.read_csv("C:/Users/kyjeon/Anaconda3/untitled2/bike-sharing-demand/train.csv", parse_dates=["datetime"])
+print(train.shape)
+train.head()
+test = pd.read_csv("C:/Users/kyjeon/Anaconda3/untitled2/bike-sharing-demand/test.csv", parse_dates=["datetime"])
+print(test.shape)
+test.head()
+
+##Data processing
+train["datetime-year"] = train["datetime"].dt.year
+train["datetime-month"] = train["datetime"].dt.month
+train["datetime-day"] = train["datetime"].dt.day
+train["datetime-hour"] = train["datetime"].dt.hour
+train["datetime-minute"] = train["datetime"].dt.minute
+train["datetime-second"] = train["datetime"].dt.second
+train["datetime-dayofweek"] = train["datetime"].dt.dayofweek
+print(train.shape)
+train[["datetime", "datetime-year", "datetime-month", "datetime-day", "datetime-hour", "datetime-minute", "datetime-second", "datetime-dayofweek"]].head()
+
+#쪼갠 날짜를 쉽게 바꾸어주기
+train.loc[train["datetime-dayofweek"] == 0, "datetime-dayofweek(humanized)"] = "Monday"
+train.loc[train["datetime-dayofweek"] == 1, "datetime-dayofweek(humanized)"] = "Tuesday"
+train.loc[train["datetime-dayofweek"] == 2, "datetime-dayofweek(humanized)"] = "Wednesday"
+train.loc[train["datetime-dayofweek"] == 3, "datetime-dayofweek(humanized)"] = "Thursday"
+train.loc[train["datetime-dayofweek"] == 4, "datetime-dayofweek(humanized)"] = "Friday"
+train.loc[train["datetime-dayofweek"] == 5, "datetime-dayofweek(humanized)"] = "Saturday"
+train.loc[train["datetime-dayofweek"] == 6, "datetime-dayofweek(humanized)"] = "Sunday"
+print(train.shape)
+train[["datetime", "datetime-dayofweek", "datetime-dayofweek(humanized)"]].head()
+
+test["datetime-year"] = test["datetime"].dt.year
+test["datetime-month"] = test["datetime"].dt.month
+test["datetime-day"] = test["datetime"].dt.day
+test["datetime-hour"] = test["datetime"].dt.hour
+test["datetime-minute"] = test["datetime"].dt.minute
+test["datetime-second"] = test["datetime"].dt.second
+test["datetime-dayofweek"] = test["datetime"].dt.dayofweek
+print(test.shape)
+
+test[["datetime", "datetime-year", "datetime-month", "datetime-day", "datetime-hour", "datetime-minute", "datetime-second", "datetime-dayofweek"]].head()
+
+test.loc[test["datetime-dayofweek"] == 0, "datetime-dayofweek(humanized)"] = "Monday"
+test.loc[test["datetime-dayofweek"] == 1, "datetime-dayofweek(humanized)"] = "Tuesday"
+test.loc[test["datetime-dayofweek"] == 2, "datetime-dayofweek(humanized)"] = "Wednesday"
+test.loc[test["datetime-dayofweek"] == 3, "datetime-dayofweek(humanized)"] = "Thursday"
+test.loc[test["datetime-dayofweek"] == 4, "datetime-dayofweek(humanized)"] = "Friday"
+test.loc[test["datetime-dayofweek"] == 5, "datetime-dayofweek(humanized)"] = "Saturday"
+test.loc[test["datetime-dayofweek"] == 6, "datetime-dayofweek(humanized)"] = "Sunday"
+print(test.shape)
+test[["datetime", "datetime-dayofweek", "datetime-dayofweek(humanized)"]].head()
+
+##Explore
+import seaborn as sns
+import matplotlib.pyplot as plt
+figure, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(nrows=2, ncols=3)
+figure.set_size_inches(18, 8)
+
+sns.barplot(data=train, x="datetime-year", y="count", ax=ax1)
+sns.barplot(data=train, x="datetime-month", y="count", ax=ax2)
+sns.barplot(data=train, x="datetime-day", y="count", ax=ax3)
+sns.barplot(data=train, x="datetime-hour", y="count", ax=ax4)
+sns.barplot(data=train, x="datetime-minute", y="count", ax=ax5)
+sns.barplot(data=train, x="datetime-second", y="count", ax=ax6)
+train["datetime-year(str)"] = train["datetime-year"].astype('str')
+train["datetime-month(str)"] = train["datetime-month"].astype('str')
+train["datetime-year_month"] = train["datetime-year(str)"] + "-" + train["datetime-month(str)"]
+print(train.shape)
+train[["datetime", "datetime-year_month"]].head()
+figure, (ax1, ax2) = plt.subplots(nrows=1, ncols=2)
+
+figure.set_size_inches(18, 4)
+sns.barplot(data=train, x="datetime-year", y="count", ax=ax1)
+sns.barplot(data=train, x="datetime-month", y="count", ax=ax2)
+figure, ax3 = plt.subplots(nrows=1, ncols=1)
+
+figure.set_size_inches(18, 4)
+sns.barplot(data=train, x="datetime-year_month", y="count", ax=ax3)
+
+figure, (ax1, ax2, ax3) = plt.subplots(nrows=3, ncols=1)
+figure.set_size_inches(18, 12)
+sns.pointplot(data=train, x="datetime-hour", y="count", ax=ax1)
+sns.pointplot(data=train, x="datetime-hour", y="count", hue="workingday", ax=ax2)
+sns.pointplot(data=train, x="datetime-hour", y="count", hue="datetime-dayofweek(humanized)", ax=ax3)
+
+##bike 수량 count
+sns.distplot(train["count"])
+
+import numpy as np
+train["log_count"] = np.log(train["count"] + 1)
+print(train.shape)
+train[["count", "log_count"]].head()
+
+figure, (ax1, ax2) = plt.subplots(nrows=1, ncols=2)
+figure.set_size_inches(18, 4)
+sns.distplot(train["count"], ax=ax1)
+sns.distplot(train["log_count"], ax=ax2)
+
+train["count(recover)"] = np.exp(train["log_count"]) - 1
+print(train.shape)
+train[["count", "log_count", "count(recover)"]].head()
+
+figure, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3)
+figure.set_size_inches(18, 4)
+sns.distplot(train["count"], ax=ax1)
+sns.distplot(train["log_count"], ax=ax2)
+sns.distplot(train["count(recover)"], ax=ax3)
+
+##Train
+
+feature_names = ["season", "holiday", "workingday", "weather",
+                 "temp", "atemp", "humidity", "windspeed",
+                 "datetime-year", "datetime-hour", "datetime-dayofweek"]
+feature_names
+label_name = "log_count"
+label_name
+
+X_train = train[feature_names]
+print(X_train.shape)
+X_train.head()
+
+X_test = test[feature_names]
+print(X_test.shape)
+X_test.head()
+
+y_train = train[label_name]
+print(y_train.shape)
+y_train.head()
+
+##Evaluate
+
+import numpy as np
+from sklearn.metrics import make_scorer
+
+def rmse(predict, actual):
+    predict = np.array(predict)
+    actual = np.array(actual)
+    distance = predict - actual
+    square_distance = distance ** 2
+    mean_square_distance = square_distance.mean()
+    score = np.sqrt(mean_square_distance)
+    return score
+    
+rmse_score = make_scorer(rmse)
+rmse_score
+
+##Hyperparameter Tuning
+import xgboost as xgb
+xgb.XGBRegressor()
+
+
+##Case1 - Grid Search
+import xgboost as xgb
+from sklearn.model_selection import cross_val_score
+n_estimators_list = [100, 300, 1000]
+max_depth_list = [50, 75, 100]
+learning_rate_list = [1.0, 0.1, 0.01, 0.001, 0.0001]
+subsample_list = [0.5, 0.75, 1.0]
+colsample_bytree_list = [0.4, 0.7, 1.0]
+colsample_bylevel_list = [0.4, 0.7, 1.0]
+
+hyperparameters_list = []
+
+for n_estimators in n_estimators_list:
+    for max_depth in max_depth_list:
+        for learning_rate in learning_rate_list:
+            for subsample in subsample_list:
+                for colsample_bylevel in colsample_bylevel_list:
+                    for colsample_bytree in colsample_bytree_list:
+                                                 model = xgb.XGBRegressor(n_estimators=n_estimators,
+                                                 max_depth=max_depth,
+                                                 learning_rate=learning_rate,
+                                                 subsample=subsample,
+                                                 colsample_bytree=colsample_bytree,
+                                                 colsample_bylevel=colsample_bylevel,
+                                                 seed=37)
+                        score = cross_val_score(model, X_train, y_train, cv=20, scoring=rmse_score).mean()
+
+                        hyperparameters = {
+                            'score': score,
+                            'n_estimators': n_estimators,
+                            'max_depth': max_depth,
+                            'learning_rate': learning_rate,
+                            'subsample': subsample,
+                            'colsample_bylevel': colsample_bylevel,
+                            'colsample_bytree': colsample_bytree,
+                        }
+
+                        hyperparameters_list.append(hyperparameters)
+                        print(f"n_estimators = {n_estimators}, max_depth = {max_depth:2}, learning_rate = {learning_rate:.6f}, subsample = {subsample:.6f}, colsample_bylevel = {colsample_bylevel:.6f}, colsample_bytree = {colsample_bytree:.6f}, Score = {score:.5f}")
+
+hyperparameters_list = pd.DataFrame.from_dict(hyperparameters_list)
+hyperparameters_list = hyperparameters_list.sort_values(by="score")
+print(hyperparameters_list.shape)
+
+hyperparameters_list.head()
+
+##Case 2 - Coarse & Finer Search
+
+import xgboost as xgb
+from sklearn.model_selection import cross_val_score
+num_epoch = 100
+
+coarse_hyperparameters_list = []
+for epoch in range(num_epoch):
+    n_estimators = np.random.randint(low=100, high=1000)
+    max_depth = np.random.randint(low=2, high=100)
+    learning_rate = 10 ** -np.random.uniform(low=0, high=10)
+    subsample = np.random.uniform(low=0.1, high=1.0)
+    colsample_bytree = np.random.uniform(low=0.4, high=1.0)
+    colsample_bylevel = np.random.uniform(low=0.4, high=1.0)
+    model = xgb.XGBRegressor(n_estimators=n_estimators,
+                             max_depth=max_depth,
+                             learning_rate=learning_rate,
+                             subsample=subsample,
+                             colsample_bylevel=colsample_bylevel,
+                             colsample_bytree=colsample_bytree,
+                             seed=37)
+    score = cross_val_score(model, X_train, y_train, cv=20, scoring=rmse_score).mean()
+    hyperparameters = {
+        'epoch': epoch,
+        'score': score,
+        'n_estimators': n_estimators,
+        'max_depth': max_depth,
+        'learning_rate': learning_rate,
+        'subsample': subsample,
+        'colsample_bylevel': colsample_bylevel,
+        'colsample_bytree': colsample_bytree,
+    }
+
+    coarse_hyperparameters_list.append(hyperparameters)
+    print(f"{epoch:2} n_estimators = {n_estimators}, max_depth = {max_depth:2}, learning_rate = {learning_rate:.10f}, subsample = {subsample:.6f}, colsample_bylevel = {colsample_bylevel:.6f}, colsample_bytree = {colsample_bytree:.6f}, Score = {score:.5f}")
+
+coarse_hyperparameters_list = pd.DataFrame.from_dict(coarse_hyperparameters_list)
+coarse_hyperparameters_list = coarse_hyperparameters_list.sort_values(by="score")
+print(coarse_hyperparameters_list.shape)
+coarse_hyperparameters_list.head(10)
+
+#finer search
+import xgboost as xgb
+from sklearn.model_selection import cross_val_score
+num_epoch = 100
+
+finer_hyperparameters_list = []
+
+for epoch in range(num_epoch):
+    n_estimators = np.random.randint(low=300, high=1000)
+    max_depth = np.random.randint(low=2, high=60)
+    learning_rate = 10 ** -np.random.uniform(low=0, high=2)
+    subsample = np.random.uniform(low=0.2, high=0.7)
+    colsample_bytree = np.random.uniform(low=0.7, high=1.0)
+    colsample_bylevel = np.random.uniform(low=0.4, high=1.0)
+    model = xgb.XGBRegressor(n_estimators=n_estimators,
+                             max_depth=max_depth,
+                             learning_rate=learning_rate,
+                             subsample=subsample,
+                             colsample_bylevel=colsample_bylevel,
+                             colsample_bytree=colsample_bytree,
+                             seed=37)
+
+    score = cross_val_score(model, X_train, y_train, cv=20, scoring=rmse_score).mean()
+    hyperparameters = {
+        'epoch': epoch,
+        'score': score,
+        'n_estimators': n_estimators,
+        'max_depth': max_depth,
+        'learning_rate': learning_rate,
+        'subsample': subsample,
+        'colsample_bylevel': colsample_bylevel,
+        'colsample_bytree': colsample_bytree,
+    }
+    finer_hyperparameters_list.append(hyperparameters)
+    print(f"{epoch:2} n_estimators = {n_estimators}, max_depth = {max_depth:2}, learning_rate = {learning_rate:.10f}, subsample = {subsample:.6f}, colsample_bylevel = {colsample_bylevel:.6f}, colsample_bytree = {colsample_bytree:.6f}, Score = {score:.5f}")
+
+finer_hyperparameters_list = pd.DataFrame.from_dict(finer_hyperparameters_list)
+finer_hyperparameters_list = finer_hyperparameters_list.sort_values(by="score")
+print(finer_hyperparameters_list.shape)
+finer_hyperparameters_list.head(10)
+
+#Set the best parameter
+best_hyperparameters = finer_hyperparameters_list.iloc[0]
+best_n_estimators = int(best_hyperparameters["n_estimators"])
+best_max_depth = int(best_hyperparameters["max_depth"])
+best_learning_rate = best_hyperparameters["learning_rate"]
+best_subsample = best_hyperparameters["subsample"]
+best_colsample_bytree = best_hyperparameters["colsample_bytree"]
+best_colsample_bylevel = best_hyperparameters["colsample_bylevel"]
+print(f"n_estimators(best) = {best_n_estimators}, max_depth(best) = {best_max_depth}, learning_rate(best) = {best_learning_rate:.6f}, subsample(best) = {best_subsample:.6f}, colsample_bytree(best) = {best_colsample_bytree:.6f}, colsample_bylevel(best) = {best_colsample_bylevel:.6f}")
+
+##Use Gradient Boosting Machine
+import xgboost as xgb
+model = xgb.XGBRegressor(n_estimators=best_n_estimators,
+                         max_depth=best_max_depth,
+                         learning_rate=best_learning_rate,
+                         subsample=best_subsample,
+                         colsample_bytree=best_colsample_bytree,
+                         colsample_bylevel=best_colsample_bylevel,
+                         seed=37)
+
+model
+model.fit(X_train, y_train)
+log_predictions = model.predict(X_test)
+print(log_predictions.shape)
+log_predictions
+predictions = np.exp(log_predictions) - 1
+
+print(predictions.shape)
+predictions
+
+##Submit
+submission = pd.read_csv("data/bike/sampleSubmission.csv")
+print(submission.shape)
+submission.head()
+submission["count"] = predictions
+print(submission.shape)
+submission.head()
+submission.to_csv("data/bike/xgboost_0.37486.csv", index=False)
 
